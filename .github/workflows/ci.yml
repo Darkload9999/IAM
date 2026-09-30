@@ -45,7 +45,7 @@ jobs:
 
       - name: TypeScript type-check
         working-directory: ui
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
   # ── Test ──────────────────────────────────────────────────────────────────
   test:
@@ -68,7 +68,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgres://hub:hub_test_pass@localhost:5432/hub_test?sslmode=disable
+      HUB_TEST_DATABASE_URL: postgres://hub:hub_test_pass@localhost:5432/hub_test?sslmode=disable
       HUB_ADDR: ":8090"
       HUB_PUBLIC_URL: "http://localhost:8090"
       HUB_ENCRYPTION_KEY: "dGVzdC1lbmNyeXB0aW9uLWtleS0zMmJ5dGVzLTE="
