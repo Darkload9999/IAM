@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hub",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "go build -o bin/hub ./cmd/hub && exec ./bin/hub"
+      ],
+      "port": 8090
+    },
+    {
+      "name": "aventra-api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd /home/darkload/Desktop/IAM/200M-PM-Tool-System-main/aventra-pm-tool && npx nest build && exec node dist/main"
+      ],
+      "port": 8080
+    }
+  ]
+}

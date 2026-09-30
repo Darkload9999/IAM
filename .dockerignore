@@ -1,0 +1,9 @@
+.git
+.claude
+.env
+.env.*
+!.env.example
+bin
+ui/node_modules
+ui/dist
+ui/tsconfig.tsbuildinfo
