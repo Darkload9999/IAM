@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop", "feature/**"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Lint ──────────────────────────────────────────────────────────────────
+  lint-ui:
+    name: Lint (UI)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: TypeScript type-check
+        working-directory: ui
+        run: npm run typecheck
+
+  # ── Test ──────────────────────────────────────────────────────────────────
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: hub
+          POSTGRES_PASSWORD: hub_test_pass
+          POSTGRES_DB: hub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hub"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      HUB_TEST_DATABASE_URL: postgres://hub:hub_test_pass@localhost:5432/hub_test?sslmode=disable
+      HUB_ADDR: ":8090"
+      HUB_PUBLIC_URL: "http://localhost:8090"
+      HUB_ENCRYPTION_KEY: "dGVzdC1lbmNyeXB0aW9uLWtleS0zMmJ5dGVzLTE="
+      HUB_SESSION_TTL: "8h"
+      HUB_SYNC_INTERVAL: "10m"
+      # Asgardeo/OIDC are stubbed out during unit/integration tests
+      ASGARDEO_BASE_URL: "https://api.asgardeo.io/t/test"
+      HUB_OIDC_CLIENT_ID: "test-client-id"
+      HUB_OIDC_CLIENT_SECRET: "test-client-secret"
+      ASGARDEO_M2M_CLIENT_ID: "test-m2m-id"
+      ASGARDEO_M2M_CLIENT_SECRET: "test-m2m-secret"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install UI dependencies
+        working-directory: ui
+        run: npm ci
+
+      - name: Run tests
+        run: make test
+
+  # ── Build ─────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint-ui, test]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build binary
+        run: make build
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hub-binary
+          path: bin/hub
+          retention-days: 7
